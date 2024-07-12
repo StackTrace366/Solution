@@ -1,0 +1,87 @@
+In .NET 8.0, the `IExceptionHandler` interface is used to handle unhandled exceptions that occur within an application. It allows you to define a custom logic to handle exceptions instead of relying on the default exception handling behavior.
+
+Here is an example of implementing the `IExceptionHandler` interface in .NET 8.0:
+
+1. Create a class that implements the `IExceptionHandler` interface:
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+public class CustomExceptionHandler : IExceptionHandler
+{
+    private readonly IWebHostEnvironment _hostingEnvironment;
+    private readonly ILogger<CustomExceptionHandler> _logger;
+
+    public CustomExceptionHandler(IWebHostEnvironment hostingEnvironment, ILogger<CustomExceptionHandler> logger)
+    {
+        _hostingEnvironment = hostingEnvironment;
+        _logger = logger;
+    }
+
+    public async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    {
+        // Custom exception handling logic goes here
+
+        // Log the exception
+        _logger.LogError(exception, "An unhandled exception occurred.");
+
+        // Set the response status code
+        context.Response.StatusCode = 500;
+
+        // Return a custom error message
+        await context.Response.WriteAsync("An error occurred. Please try again later.");
+    }
+}
+```
+
+2. Register the `CustomExceptionHandler` in the `Startup.cs` file:
+
+```csharp
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        // Add the custom exception handler
+        services.AddSingleton<IExceptionHandler, CustomExceptionHandler>();
+
+        // Other service configurations
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        // Other middleware configurations
+
+        // Use the custom exception handler
+        app.UseExceptionHandler(errorApp =>
+        {
+            errorApp.Run(async context =>
+            {
+                var exceptionHandler = context.RequestServices.GetRequiredService<IExceptionHandler>();
+                var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+
+                if (exceptionFeature != null)
+                {
+                    await exceptionHandler.HandleExceptionAsync(context, exceptionFeature.Error);
+                }
+            });
+        });
+
+        // Other middleware configurations
+    }
+}
+```
+
+In the example above, the `CustomExceptionHandler` class implements the `IExceptionHandler` interface and provides a custom implementation for handling exceptions. The `HandleExceptionAsync` method is called whenever an unhandled exception occurs in the application. In this method, you can define your own logic to handle the exception, such as logging, setting the response status code, and returning a custom error message.
+
+The `Startup` class registers the `CustomExceptionHandler` as a singleton service using the `AddSingleton` method. It then configures the exception handling middleware using the `UseExceptionHandler` method. Inside the middleware, the `HandleExceptionAsync` method of the registered `IExceptionHandler` instance is called to handle the exception.
+
+Note that the `CustomExceptionHandler` class takes `IWebHostEnvironment` and `ILogger<CustomExceptionHandler>` as constructor parameters. These are dependency injections that allow you to access the hosting environment and logging capabilities within the exception handling logic.
