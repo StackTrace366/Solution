@@ -85,3 +85,105 @@ In the example above, the `CustomExceptionHandler` class implements the `IExcept
 The `Startup` class registers the `CustomExceptionHandler` as a singleton service using the `AddSingleton` method. It then configures the exception handling middleware using the `UseExceptionHandler` method. Inside the middleware, the `HandleExceptionAsync` method of the registered `IExceptionHandler` instance is called to handle the exception.
 
 Note that the `CustomExceptionHandler` class takes `IWebHostEnvironment` and `ILogger<CustomExceptionHandler>` as constructor parameters. These are dependency injections that allow you to access the hosting environment and logging capabilities within the exception handling logic.
+
+************************************
+
+To fix the unsafe-inline issue for the style-src Content Security Policy (CSP) in ASP.NET MVC4, you can create a custom HTTP handler that adds the necessary nonce to inline styles. Here's an example of how you can implement it:
+
+1. Create a new class that inherits from `DelegatingHandler`:
+
+```csharp
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+
+public class CSPStyleNonceHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var response = await base.SendAsync(request, cancellationToken);
+
+        if (response != null && response.Headers.Contains("Content-Security-Policy"))
+        {
+            var cspHeaderValues = response.Headers.GetValues("Content-Security-Policy");
+            var updatedCspHeaderValues = new List<string>();
+
+            foreach (var cspHeaderValue in cspHeaderValues)
+            {
+                var updatedCspHeaderValue = AddNonceToStyleSrc(cspHeaderValue);
+                updatedCspHeaderValues.Add(updatedCspHeaderValue);
+            }
+
+            response.Headers.Remove("Content-Security-Policy");
+            response.Headers.Add("Content-Security-Policy", updatedCspHeaderValues);
+        }
+
+        return response;
+    }
+
+    private string AddNonceToStyleSrc(string cspHeaderValue)
+    {
+        const string nonceKeyword = "'nonce-";
+        const string styleSrcDirective = "style-src";
+
+        var styleSrcIndex = cspHeaderValue.IndexOf(styleSrcDirective, StringComparison.OrdinalIgnoreCase);
+
+        if (styleSrcIndex >= 0)
+        {
+            var styleSrcDirectiveEndIndex = cspHeaderValue.IndexOf(';', styleSrcIndex);
+
+            if (styleSrcDirectiveEndIndex < 0)
+            {
+                styleSrcDirectiveEndIndex = cspHeaderValue.Length;
+            }
+
+            var styleSrcDirectiveValue = cspHeaderValue.Substring(styleSrcIndex, styleSrcDirectiveEndIndex - styleSrcIndex);
+
+            if (!styleSrcDirectiveValue.Contains(nonceKeyword))
+            {
+                var nonce = GenerateNonce();
+                var updatedStyleSrcDirective = styleSrcDirectiveValue + " " + nonceKeyword + nonce + "'";
+
+                cspHeaderValue = cspHeaderValue.Replace(styleSrcDirectiveValue, updatedStyleSrcDirective);
+            }
+        }
+
+        return cspHeaderValue;
+    }
+
+    private string GenerateNonce()
+    {
+        var nonceBytes = new byte[16];
+        using (var rng = new RNGCryptoServiceProvider())
+        {
+            rng.GetBytes(nonceBytes);
+        }
+
+        return Convert.ToBase64String(nonceBytes);
+    }
+}
+```
+
+2. Add the `CSPStyleNonceHandler` to your HTTP pipeline. You can do this in the `RegisterRoutes` method in the `Global.asax.cs` file:
+
+```csharp
+public class MvcApplication : HttpApplication
+{
+    protected void Application_Start()
+    {
+        // Other application startup code...
+
+        RegisterRoutes(RouteTable.Routes);
+    }
+
+    private void RegisterRoutes(RouteCollection routes)
+    {
+        // Other route configuration...
+
+        GlobalConfiguration.Configuration.MessageHandlers.Add(new CSPStyleNonceHandler());
+    }
+}
+```
+
+By adding this custom HTTP handler, the `CSPStyleNonceHandler` will intercept the HTTP response, locate the Content Security Policy header, and add the necessary nonce to the `style-src` directive. This ensures that inline styles will be allowed while maintaining the security of your application.
