@@ -327,3 +327,61 @@ export class AppModule { }
 With this setup, the `ContentSecurityPolicyInterceptor` will intercept every HTTP request and add the `Content-Security-Policy` header with the appropriate nonce value.
 
 Note: You need to implement the `generateNonce()` method in the interceptor to generate a unique nonce value for each request. This can be done based on your specific requirements.
+**************************
+To match the nonce generated from `Noncedirective` and `CustomHttpNonceInterceptor`, you can follow these steps:
+
+1. Implement the `CustomHttpNonceInterceptor` class that extends `HttpInterceptor` and overrides the `intercept()` method.
+2. In the `intercept()` method, extract the nonce generated from the server response header.
+3. Store the nonce value in a variable or a shared service.
+4. Create a `Noncedirective` that generates a nonce value using a custom logic.
+5. Inject the shared service into the `Noncedirective`.
+6. When generating the nonce value in the `Noncedirective`, compare it with the stored nonce value from the `CustomHttpNonceInterceptor`.
+7. If the generated nonce matches the stored nonce, proceed with the necessary action in the `Noncedirective`.
+
+Here's an example implementation:
+
+1. CustomHttpNonceInterceptor:
+
+```typescript
+@Injectable()
+export class CustomHttpNonceInterceptor implements HttpInterceptor {
+  constructor(private sharedService: SharedService) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    return next.handle(req).pipe(
+      tap((event) => {
+        if (event instanceof HttpResponse) {
+          const nonce = event.headers.get('X-Nonce');
+          this.sharedService.setNonce(nonce); // Store the nonce value in the shared service
+        }
+      })
+    );
+  }
+}
+```
+
+2. Noncedirective:
+
+```typescript
+@Directive({
+  selector: '[noncedirective]'
+})
+export class Noncedirective {
+  constructor(private sharedService: SharedService) {}
+
+  @HostBinding('attr.nonce')
+  get nonce(): string {
+    const generatedNonce = // Generate the nonce using custom logic
+    const storedNonce = this.sharedService.getNonce(); // Retrieve the stored nonce value
+
+    if (generatedNonce === storedNonce) {
+      return generatedNonce;
+    } else {
+      // Handle non-matching nonce
+      return '';
+    }
+  }
+}
+```
+
+Ensure that you have registered both the `CustomHttpNonceInterceptor` and `Noncedirective` in the appropriate modules for them to be used in your application.
