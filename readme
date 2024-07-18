@@ -199,4 +199,18 @@ By adding this custom HTTP handler, the `CSPStyleNonceHandler` will intercept th
     "font-src": "'self'",
     "connect-src": "'self'"
   }
+**********
+import { enableProdMode } from '@angular/core';
+   import { environment } from './environments/environment';
+   
+   if (environment.production) {
+     enableProdMode();
+     require('helmet').contentSecurityPolicy({
+       directives: {
+         defaultSrc: ["'self'"],
+         styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+         fontSrc: ["'self'", 'https://fonts.gstatic.com']
+       },
+     });
+   }
 }
