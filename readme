@@ -273,3 +273,57 @@ export class AppModule { }
 ```
 
 By following these steps, the `NonceDirective` will set a random nonce value on the element where it is applied. This nonce value can be used to secure your Angular application against certain types of attacks, such as cross-site scripting (XSS) attacks.
+
+****************************
+In Angular, you can achieve the same functionality by using Angular's HttpInterceptor. Here's an example:
+
+1. Create a new file called `content-security-policy.interceptor.ts` and add the following code:
+
+```typescript
+import { Injectable } from '@angular/core';
+import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+
+@Injectable()
+export class ContentSecurityPolicyInterceptor implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const nonce = this.generateNonce();
+    const modifiedReq = req.clone({
+      setHeaders: {
+        'Content-Security-Policy': `style-src 'self' 'nonce-${nonce}'`
+      }
+    });
+    return next.handle(modifiedReq);
+  }
+
+  private generateNonce(): string {
+    // Implement your nonce generation logic here
+    return 'your-nonce-value';
+  }
+}
+```
+
+2. In your Angular module, add the interceptor to the `providers` array:
+
+```typescript
+import { NgModule } from '@angular/core';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { ContentSecurityPolicyInterceptor } from './content-security-policy.interceptor';
+
+@NgModule({
+  imports: [
+    HttpClientModule
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ContentSecurityPolicyInterceptor,
+      multi: true
+    }
+  ]
+})
+export class AppModule { }
+```
+
+With this setup, the `ContentSecurityPolicyInterceptor` will intercept every HTTP request and add the `Content-Security-Policy` header with the appropriate nonce value.
+
+Note: You need to implement the `generateNonce()` method in the interceptor to generate a unique nonce value for each request. This can be done based on your specific requirements.
