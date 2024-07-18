@@ -214,3 +214,62 @@ import { enableProdMode } from '@angular/core';
      });
    }
 }
+*****************************
+To use nonce-based directive in Angular 8.2, you can follow these steps:
+
+1. Create a new directive using the Angular CLI command:
+```
+ng generate directive NonceDirective
+```
+
+2. Open the generated `nonce.directive.ts` file and update it with the following code:
+
+```typescript
+import { Directive, OnInit, Renderer2, ElementRef } from '@angular/core';
+
+@Directive({
+  selector: '[appNonce]'
+})
+export class NonceDirective implements OnInit {
+
+  constructor(private renderer: Renderer2, private el: ElementRef) { }
+
+  ngOnInit() {
+    // Generate a random nonce value
+    const nonce = Math.random().toString(36).substring(2);
+    
+    // Set the nonce attribute on the element
+    this.renderer.setAttribute(this.el.nativeElement, 'nonce', nonce);
+  }
+
+}
+```
+
+3. In your component's template, add the `appNonce` directive to the element where you want to apply the nonce:
+
+```html
+<div appNonce>
+  <!-- Content here -->
+</div>
+```
+
+4. Finally, update your Angular module to include the `NonceDirective`:
+
+```typescript
+import { NgModule } from '@angular/core';
+import { NonceDirective } from './nonce.directive';
+
+@NgModule({
+  declarations: [
+    NonceDirective
+  ],
+  imports: [
+    // Other imports
+  ],
+  providers: [],
+  bootstrap: []
+})
+export class AppModule { }
+```
+
+By following these steps, the `NonceDirective` will set a random nonce value on the element where it is applied. This nonce value can be used to secure your Angular application against certain types of attacks, such as cross-site scripting (XSS) attacks.
