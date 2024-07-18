@@ -385,3 +385,49 @@ export class Noncedirective {
 ```
 
 Ensure that you have registered both the `CustomHttpNonceInterceptor` and `Noncedirective` in the appropriate modules for them to be used in your application.
+**********************
+To implement `CustomHttpNonceInterceptor` and `Noncedirective` in an Angular HTML component with inline styles, you need to follow these steps:
+
+1. Add the `CustomHttpNonceInterceptor` to your Angular module's `providers` array. This will make sure that the interceptor is used for all HTTP requests in your application.
+
+```typescript
+import { CustomHttpNonceInterceptor } from './path-to/CustomHttpNonceInterceptor';
+
+@NgModule({
+  declarations: [/* ... */],
+  imports: [/* ... */],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: CustomHttpNonceInterceptor,
+      multi: true
+    }
+  ],
+  bootstrap: [/* ... */]
+})
+export class AppModule { }
+```
+
+2. In your Angular component's HTML file, add the `Noncedirective` to the element for which you want to apply the nonce. You can use the `style` attribute to add inline styles to the element.
+
+```html
+<div [appNoncedirective] style="/* inline styles here */">
+  <!-- Content of the element -->
+</div>
+```
+
+3. Make sure to import the `Noncedirective` in your component's TypeScript file and add it to the `directives` array of the component.
+
+```typescript
+import { Noncedirective } from './path-to/Noncedirective';
+
+@Component({
+  selector: 'app-my-component',
+  templateUrl: './my-component.component.html',
+  styleUrls: ['./my-component.component.css'],
+  directives: [Noncedirective]
+})
+export class MyComponent { }
+```
+
+By following these steps, the `CustomHttpNonceInterceptor` will intercept all HTTP requests made by your application, and the `Noncedirective` will apply the nonce to the specified HTML element with inline styles.
