@@ -431,3 +431,90 @@ export class MyComponent { }
 ```
 
 By following these steps, the `CustomHttpNonceInterceptor` will intercept all HTTP requests made by your application, and the `Noncedirective` will apply the nonce to the specified HTML element with inline styles.
+
+********&&&&&&&&&&&**********
+To implement a dynamic nonce value in the internal style and HTTP interceptor in Angular 8.2, you can follow these steps:
+
+1. Create a service to generate a dynamic nonce value. This service will be responsible for generating and providing the nonce value whenever requested. For example, you can create a `NonceService` with a `generateNonce()` method.
+
+```typescript
+import { Injectable } from '@angular/core';
+
+@Injectable()
+export class NonceService {
+  generateNonce(): string {
+    // Generate and return the nonce value
+    return 'your_dynamic_nonce_value';
+  }
+}
+```
+
+2. In your component or style file, inject the `NonceService` and use the generated nonce value.
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { NonceService } from 'path/to/nonce.service';
+
+@Component({
+  selector: 'app-my-component',
+  template: `
+    <style nonce="{{ nonce }}">
+      /* Your internal styles here */
+    </style>
+  `
+})
+export class MyComponent implements OnInit {
+  nonce: string;
+
+  constructor(private nonceService: NonceService) {}
+
+  ngOnInit() {
+    this.nonce = this.nonceService.generateNonce();
+  }
+}
+```
+
+3. In your HTTP interceptor, inject the `NonceService` and add the nonce value to the request headers.
+
+```typescript
+import { Injectable } from '@angular/core';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { NonceService } from 'path/to/nonce.service';
+
+@Injectable()
+export class NonceInterceptor implements HttpInterceptor {
+  constructor(private nonceService: NonceService) {}
+
+  intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const nonce = this.nonceService.generateNonce();
+    const modifiedRequest = request.clone({
+      setHeaders: {
+        'X-Nonce': nonce
+      }
+    });
+    return next.handle(modifiedRequest);
+  }
+}
+```
+
+4. Register the HTTP interceptor in your AppModule.
+
+```typescript
+import { NgModule } from '@angular/core';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { NonceInterceptor } from 'path/to/nonce.interceptor';
+
+@NgModule({
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: NonceInterceptor,
+      multi: true
+    }
+  ]
+})
+export class AppModule {}
+```
+
+With these steps, you will have a dynamic nonce value implemented in both the internal style and HTTP interceptor in Angular 8.2.
