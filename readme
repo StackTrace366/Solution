@@ -518,3 +518,6 @@ export class AppModule {}
 ```
 
 With these steps, you will have a dynamic nonce value implemented in both the internal style and HTTP interceptor in Angular 8.2.
+
+***********
+https://blog.angular.dev/angular-v16-is-here-4d7a28ec680d
