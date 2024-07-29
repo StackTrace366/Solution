@@ -521,3 +521,52 @@ With these steps, you will have a dynamic nonce value implemented in both the in
 
 ***********
 https://blog.angular.dev/angular-v16-is-here-4d7a28ec680d
+
+*********************
+In ASP.NET Core, the configuration settings are managed using the `IConfiguration` interface. To update a configuration key-value pair, you can follow the below code:
+
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
+public void UpdateConfiguration(string key, string value)
+{
+    if (key != null && value != null)
+    {
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(System.AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddEnvironmentVariables();
+
+        IConfigurationRoot configuration = builder.Build();
+
+        var configValue = configuration.GetValue<string>(key);
+        if (configValue != null)
+        {
+            IConfigurationRoot newConfiguration = new ConfigurationBuilder()
+                .SetBasePath(System.AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            newConfiguration[key] = value;
+
+            using (var host = new HostBuilder().Build())
+            {
+                var configurationProvider = host.Services.GetService(typeof(IConfigurationProvider)) as IConfigurationProvider;
+                configurationProvider.Set(key, value);
+                configurationProvider.Commit();
+            }
+        }
+    }
+}
+```
+
+Make sure to add the required NuGet packages:
+
+- Microsoft.Extensions.Configuration
+- Microsoft.Extensions.Configuration.EnvironmentVariables
+- Microsoft.Extensions.Configuration.Json
+- Microsoft.Extensions.Hosting
+
+Note: The above code assumes that the configuration values are stored in the `appsettings.json` file. Adjust the code according to your specific configuration setup.
